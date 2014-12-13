@@ -18,7 +18,7 @@ import javax.swing.JOptionPane;
 public class EditUser extends javax.swing.JFrame {
     public static java.sql.Connection connectDB = null;
     java.lang.String userName = null;
-    com.amimobenja.www.DBObject dbObject;
+    com.amimobenja.www.helpers.DBObject dbObject;
 
     /**
      * Creates new form UserSetUp
@@ -28,7 +28,7 @@ public class EditUser extends javax.swing.JFrame {
     public EditUser(java.sql.Connection connDb, java.lang.String username) {
         connectDB = connDb;
         userName = username;
-        dbObject = new com.amimobenja.www.DBObject();
+        dbObject = new com.amimobenja.www.helpers.DBObject();
         
         initComponents();
         
@@ -50,7 +50,7 @@ public class EditUser extends javax.swing.JFrame {
         searchDialogPanel = new javax.swing.JPanel();
         searchNumbTxt = new javax.swing.JTextField();
         searchScrollPane = new javax.swing.JScrollPane();
-        searchTable = new com.amimobenja.www.JTable();
+        searchTable = new com.amimobenja.www.helpers.JTable();
         searchBtn = new javax.swing.JButton();
         removeUserPanel = new javax.swing.JPanel();
         idLbl = new javax.swing.JLabel();
@@ -422,14 +422,16 @@ public class EditUser extends javax.swing.JFrame {
         
         java.lang.String passWordTwo = java.lang.String.copyValueOf(passsWordTwo);
         
-        if (idTxt.getText().equals("") || firstNameTxt.getText().equals("")
+        if (idTxt.getText().equals("") || newIDTxt.getText().equals("") || firstNameTxt.getText().equals("")
                  || otherNameTxt.getText().equals("") || userNameTxt.getText().equals("") || !passWord.equals(passWordTwo)) {
                         
             if (idTxt.getText().equals("")) {
                 idLbl.setForeground(Color.red);
+            }  else if (newIDTxt.getText().equals("")) {
+                newIDLbl.setForeground(Color.red);
             }  else if (firstNameTxt.getText().equals("")) {
                 firstNameLbl.setForeground(Color.red);
-            }  else if (otherNameTxt.getText().equals("")) {
+            }    else if (otherNameTxt.getText().equals("")) {
                 otherNameLbl.setForeground(Color.red);
             }  else if (userNameTxt.getText().equals("")) {
                 userNameLbl.setForeground(Color.red);
@@ -501,7 +503,7 @@ public class EditUser extends javax.swing.JFrame {
         } else {
             System.out.println("Searching...");
 
-            searchTable.setModel(com.amimobenja.www.TableModel.createTableVectors(connectDB,
+            searchTable.setModel(com.amimobenja.www.helpers.TableModel.createTableVectors(connectDB,
                 "SELECT id, initcap(first_name) || ' '|| initcap(other_names) AS employee_name, "
                 + "username FROM secure_access_tbl WHERE id ILIKE '%"+searchNumbTxt.getText()+"%' "
                 + "OR username ILIKE '%"+searchNumbTxt.getText()+"%' AND username NOT LIKE '"+userName+"' ORDER BY id"));

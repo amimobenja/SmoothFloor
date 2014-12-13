@@ -55,7 +55,7 @@
                     <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="searchTableMouseClicked"/>
                   </Events>
                   <AuxValues>
-                    <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new com.amimobenja.www.JTable()"/>
+                    <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new com.amimobenja.www.helpers.JTable()"/>
                     <AuxValue name="JavaCodeGenerator_CreateCodePost" type="java.lang.String" value=""/>
                   </AuxValues>
                 </Component>

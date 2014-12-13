@@ -17,7 +17,7 @@ import javax.swing.JOptionPane;
 public class MaizeBagBought extends javax.swing.JFrame {
     public static java.sql.Connection connectDB = null;
     java.lang.String userName = null;
-    com.amimobenja.www.DBObject dbObject;
+    com.amimobenja.www.helpers.DBObject dbObject;
     java.lang.String price;
 
     /**
@@ -26,7 +26,7 @@ public class MaizeBagBought extends javax.swing.JFrame {
     public MaizeBagBought(java.sql.Connection connDb, java.lang.String username) {
         connectDB = connDb;
         userName = username;
-        dbObject = new com.amimobenja.www.DBObject();
+        dbObject = new com.amimobenja.www.helpers.DBObject();
         
         initComponents();
         
@@ -283,7 +283,7 @@ public class MaizeBagBought extends javax.swing.JFrame {
                                 java.sql.PreparedStatement pstmt = connectDB.prepareStatement("INSERT INTO maize_bags_tbl"
                                         + "(date, no_mbg_bght, cost_per_bag, total_cost, est_tins, rem_bags, user_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-                                    pstmt.setDate(1, com.amimobenja.www.SQLDateFormat.getSQLDate(todayDate));
+                                    pstmt.setDate(1, com.amimobenja.www.helpers.SQLDateFormat.getSQLDate(todayDate));
                                     pstmt.setDouble(2, Double.valueOf(noBagBoughtTxt.getText()));
                                     pstmt.setDouble(3, Double.valueOf(costPerBagTxt.getText()));
                                     pstmt.setDouble(4, Double.valueOf(a));
@@ -356,7 +356,7 @@ public class MaizeBagBought extends javax.swing.JFrame {
                                 connectDB.setAutoCommit(false);
 
                                 java.sql.PreparedStatement pstmt = connectDB.prepareStatement("UPDATE maize_bags_tbl "
-                                        + "SET date='"+com.amimobenja.www.SQLDateFormat.getSQLDate(todayDate)+"', no_mbg_bght='"+Double.valueOf(noBagBoughtTxt.getText())+"', "
+                                        + "SET date='"+com.amimobenja.www.helpers.SQLDateFormat.getSQLDate(todayDate)+"', no_mbg_bght='"+Double.valueOf(noBagBoughtTxt.getText())+"', "
                                         + "cost_per_bag='"+Double.valueOf(costPerBagTxt.getText())+"', total_cost='"+Double.valueOf(a)+"', "
                                         + "est_tins='"+Double.valueOf(estiTinsTxt.getText())+"', rem_bags='"+z+"', user_name='"+userName+"'");                                    
 
@@ -434,7 +434,7 @@ public class MaizeBagBought extends javax.swing.JFrame {
         
         if (noBagBoughtTxt.getText().matches("^[0-9]+(\\.[0-9]{1,4})?$") && costPerBagTxt.getText().matches("^[0-9]+(\\.[0-9]{1,4})?$")) {
             String a = Double.toString(((Double.valueOf(noBagBoughtTxt.getText()))*(Double.valueOf(costPerBagTxt.getText()))));
-            totalCostTxt.setText(new com.amimobenja.www.Format2Currency().Format2Currency(a));
+            totalCostTxt.setText(new com.amimobenja.www.helpers.Format2Currency().Format2Currency(a));
         } else {
             JOptionPane.showMessageDialog(rootPane, "Double check the Details Entered at No. of Maize Bag Bought - "+noBagBoughtTxt.getText()+" "
                     + "and Cost per Bag - "+costPerBagTxt.getText()+"! \n\nRemove any Spaces.", "Error! In Values.", JOptionPane.ERROR_MESSAGE);

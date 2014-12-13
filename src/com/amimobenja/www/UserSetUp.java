@@ -17,7 +17,7 @@ import javax.swing.JOptionPane;
 public class UserSetUp extends javax.swing.JFrame {
     public static java.sql.Connection connectDB = null;
     java.lang.String userName = null;
-    com.amimobenja.www.DBObject dbObject;
+    com.amimobenja.www.helpers.DBObject dbObject;
 
     /**
      * Creates new form UserSetUp
@@ -27,7 +27,7 @@ public class UserSetUp extends javax.swing.JFrame {
     public UserSetUp(java.sql.Connection connDb, java.lang.String username) {
         connectDB = connDb;
         userName = username;
-        dbObject = new com.amimobenja.www.DBObject();
+        dbObject = new com.amimobenja.www.helpers.DBObject();
         
         initComponents();
         

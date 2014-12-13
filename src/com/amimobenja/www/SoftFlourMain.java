@@ -4,10 +4,18 @@
  */
 package com.amimobenja.www;
 
+import com.amimobenja.www.helpers.ClearTable;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 /**
@@ -17,20 +25,28 @@ import javax.swing.JOptionPane;
 public class SoftFlourMain extends javax.swing.JFrame {
     public static java.sql.Connection connectDB = null;
     java.lang.String userName = null;
-    com.amimobenja.www.DBObject dbObject;
+    com.amimobenja.www.helpers.DBObject dbObject;
+    
     java.util.Calendar cal = java.util.Calendar.getInstance();
     java.util.Date todayDate = null;
+    
+    private int offset;
+    private int limit;
+    
+    int generalReport = 1;
     
 
     /**
      * Creates new form SoftFlourMain1
      * @param connDb
+     * @param pConnectDB
      * @param username
      */
     public SoftFlourMain(java.sql.Connection connDb, java.lang.String username) {
         connectDB = connDb;
         userName = username;
-        dbObject = new com.amimobenja.www.DBObject();
+        
+        dbObject = new com.amimobenja.www.helpers.DBObject();
         todayDate = cal.getTime();
         
         initComponents();
@@ -43,17 +59,70 @@ public class SoftFlourMain extends javax.swing.JFrame {
         
         populateTextFields();
         
-        tableValuesTbl.setModel(com.amimobenja.www.TableModel.createTableVectors(connectDB, 
-                    "SELECT date, maize_bag_bought, total_cost_of_maize_bags, store_maize_bags, tins_sold, tin_sld_cash, "
-                            + "posh_unit_start, posh_unit_end, ele_posh_cost, maint_item, maint_cost, profit  FROM soft_floor_main_tbl ORDER BY date"));
-        
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
+        
+        
+        offset =0;
+        limit = 30;
+        ClearTable.clearthisTable(tableValuesTbl);
+        ShowVisibleQueryItems(offset);
+        
+        nextBtn.setEnabled(true);
     }
+    
+    private void ShowVisibleQueryItems(Integer offset){
+     
+     try {
+         System.out.println("SELECT date, maize_bag_bought, total_cost_of_maize_bags, store_maize_bags, tins_sold, tin_sld_cash, "
+                 + "posh_unit_start, posh_unit_end, ele_posh_cost, maint_item, maint_cost, profit  FROM soft_floor_main_tbl "
+                + "ORDER BY date DESC LIMIT "+tableValuesTbl.getRowCount()+" OFFSET - "+offset+"");
+         
+         
+        PreparedStatement pst = connectDB.prepareStatement("SELECT date, maize_bag_bought, total_cost_of_maize_bags, store_maize_bags, "
+                + "tins_sold, tin_sld_cash, posh_unit_start, posh_unit_end, "
+                + "ele_posh_cost, maint_item, maint_cost, profit  FROM soft_floor_main_tbl "
+                + "ORDER BY date DESC LIMIT "+tableValuesTbl.getRowCount()+" OFFSET - "+offset+"");
+            
+            
+            ResultSet rset = pst.executeQuery();
+            int i=0;
+            while(rset.next()){
+               tableValuesTbl.setValueAt(rset.getObject(1), i, 0);
+               tableValuesTbl.setValueAt(rset.getObject(2), i, 1);
+               tableValuesTbl.setValueAt(rset.getObject(3), i, 2);
+               tableValuesTbl.setValueAt(rset.getObject(4), i, 3);
+               tableValuesTbl.setValueAt(rset.getObject(5), i, 4);
+               tableValuesTbl.setValueAt(rset.getObject(6), i, 5);
+               tableValuesTbl.setValueAt(rset.getObject(7), i, 6);
+               tableValuesTbl.setValueAt(rset.getObject(8), i, 7);
+               tableValuesTbl.setValueAt(rset.getObject(9), i, 8);
+               tableValuesTbl.setValueAt(rset.getObject(10), i, 9);
+               tableValuesTbl.setValueAt(rset.getObject(11), i, 10);
+               tableValuesTbl.setValueAt(rset.getObject(12), i, 11);
+               
+               
+               for (int a=1; a <= 12; a++) {
+                   System.out.println("Values - "+rset.getObject(a));
+               }
+            
+               i++;
+            }
+        
+        } catch (SQLException ex) {
+            Logger.getLogger(EditMaizeBagBought.class.getName()).log(Level.SEVERE, null, ex);
+        }   
+     
+     
+     
+     }
     
     
     public final void populateTextFields() {
         String no_mbg_bght = null, total_cost = null, rem_bags = null;
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy");
+        
+        Date today = new Date();
         try {
 
                 System.out.println("About to Get the Maize Bags");
@@ -72,15 +141,22 @@ public class SoftFlourMain extends javax.swing.JFrame {
                 }
                 
                 maizeBagsBoughtTxt.setText(no_mbg_bght);
-                maizeBagTotalCostTxt.setText(new com.amimobenja.www.Format2Currency().Format2Currency(total_cost));
+                maizeBagTotalCostTxt.setText(new com.amimobenja.www.helpers.Format2Currency().Format2Currency(total_cost));
                 maizeBagsTxt.setText(rem_bags);                
                 
                 houseUnitStartTxt.setText("0.00");
                 houseUnitEndTxt.setText("0.00");
                 houseUnitTxt.setText("0.00");
                                 
-                mainenanceItemNameTxt.setText("NONE");
+                mainenanceItemNameTxt.setText(sdf.format(today)+" MC");
                 mainenanceCostTxt.setText("0.00");
+                
+                codeMeaningTextArea.setText("MBB - Maize Bags Bought,                    TCMB - Total Cost of the Maize Bags,                    "
+                        + "SMB - Store Maize Bags, "
+                        + "\nT/S - Tins Sold,                                      TS/C - Tins Sold Cash,                                          PUS - Posho Mill Unit Start,           "
+                        + " PUE - Posho Mill Unit End, "
+                        + "\nEPC - Electricity Cost for Posho Mill,                                   MD - Maintenance Date MC - Maintenance Cost,"
+                        + "                                     P(Ksh) - Profit(Ksh) ");
                 
                 System.out.println("The Maize Bags should be set!");
 
@@ -125,9 +201,9 @@ public class SoftFlourMain extends javax.swing.JFrame {
                 
                 maizeBagsTxt.setText(rembags);
                 
-                if ((Double.valueOf(tinsSoldTxt.getText())/value) > Double.valueOf(maizeBagsTxt.getText())) {
+                if (Double.valueOf(maizeBagsTxt.getText()) <= 0.25) {
                     System.out.println("ADD MORE STOCK");
-                    JOptionPane.showMessageDialog(null, "You cannot go below the remaining maize bags.", 
+                    JOptionPane.showMessageDialog(null, "You cannot sell beyond the remaining stock of available maize tins. \n\nPlease Add more Stock!", 
                             "Minimum Stock Level!!!", JOptionPane.INFORMATION_MESSAGE);
                     
                     tinsSoldTxt.setText("");
@@ -161,7 +237,7 @@ public class SoftFlourMain extends javax.swing.JFrame {
                 }
                 cash = Double.toString(((Double.valueOf(tinsSoldTxt.getText()))*(Double.valueOf(price))));
                 
-                tinsSoldCashRaisedTxt.setText(new com.amimobenja.www.Format2Currency().Format2Currency(cash));
+                tinsSoldCashRaisedTxt.setText(new com.amimobenja.www.helpers.Format2Currency().Format2Currency(cash));
                 
                 System.out.println("The Tin Price should be set! - "+price);
 
@@ -182,6 +258,10 @@ public class SoftFlourMain extends javax.swing.JFrame {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        softFlourMillersTabbedPane = new javax.swing.JTabbedPane();
+        mainPanel = new javax.swing.JPanel();
+        labelPanel = new javax.swing.JPanel();
+        inforLbl = new javax.swing.JLabel();
         previousMainPanel = new javax.swing.JPanel();
         dateLbl = new javax.swing.JLabel();
         dateChooser = new com.toedter.calendar.JDateChooser();
@@ -211,10 +291,18 @@ public class SoftFlourMain extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         mainenanceItemNameTxt = new javax.swing.JTextField();
         mainenanceCostTxt = new javax.swing.JTextField();
+        searchUserBtn = new javax.swing.JButton();
         tablePanel = new javax.swing.JPanel();
         tableValuesScrollPane = new javax.swing.JScrollPane();
-        tableValuesTbl = new com.amimobenja.www.JTable();
-        inforLbl = new javax.swing.JLabel();
+        tableValuesTbl = new com.amimobenja.www.helpers.JTable();
+        codeMainingPanel = new javax.swing.JPanel();
+        codeMeaningScrollPane = new javax.swing.JScrollPane();
+        codeMeaningTextArea = new javax.swing.JTextArea();
+        btnNavigationPanel = new javax.swing.JPanel();
+        naviEditBtn = new javax.swing.JButton();
+        navRestBtn = new javax.swing.JButton();
+        previousBtn = new javax.swing.JButton();
+        nextBtn = new javax.swing.JButton();
         softflourMainBar = new javax.swing.JMenuBar();
         setUpMnu = new javax.swing.JMenu();
         tinPricesMnuItm = new javax.swing.JMenuItem();
@@ -225,12 +313,39 @@ public class SoftFlourMain extends javax.swing.JFrame {
         removeUserMnItm = new javax.swing.JMenuItem();
         logOutMnuItm = new javax.swing.JMenuItem();
         exitMnuItm = new javax.swing.JMenuItem();
+        editMnu = new javax.swing.JMenu();
+        removeMnuItm = new javax.swing.JMenuItem();
+        reportsMnu = new javax.swing.JMenu();
+        periodicMnuItm = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("SMOOTHFLOUR MILLERS MAIN");
         setFont(new java.awt.Font("Ubuntu", 1, 14)); // NOI18N
-        setPreferredSize(new java.awt.Dimension(1300, 700));
+        setPreferredSize(new java.awt.Dimension(1000, 600));
         getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        mainPanel.setLayout(new java.awt.GridBagLayout());
+
+        labelPanel.setLayout(new java.awt.GridBagLayout());
+
+        inforLbl.setForeground(new java.awt.Color(0, 51, 255));
+        inforLbl.setText("                      SmoothFlour Millers was Developed and Tested by Amimo Benja. You can contact him using the Email Address:- amimobenja08@gmail.com");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 10;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 0.2;
+        labelPanel.add(inforLbl, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 0.2;
+        mainPanel.add(labelPanel, gridBagConstraints);
 
         previousMainPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Todays Details", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 51, 204)));
         previousMainPanel.setLayout(new java.awt.GridBagLayout());
@@ -344,8 +459,8 @@ public class SoftFlourMain extends javax.swing.JFrame {
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        getContentPane().add(previousMainPanel, gridBagConstraints);
+        gridBagConstraints.weighty = 0.2;
+        mainPanel.add(previousMainPanel, gridBagConstraints);
 
         electricityUsedPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Electricity Used Details", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 51, 255)));
         electricityUsedPanel.setLayout(new java.awt.GridBagLayout());
@@ -436,6 +551,11 @@ public class SoftFlourMain extends javax.swing.JFrame {
 
         profitRaisedTxt.setEditable(false);
         profitRaisedTxt.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Profit (+/-)", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 51, 204)));
+        profitRaisedTxt.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                profitRaisedTxtMouseClicked(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 5;
@@ -525,7 +645,8 @@ public class SoftFlourMain extends javax.swing.JFrame {
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Maintenance Cost Details", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 0, 0)));
         jPanel1.setLayout(new java.awt.GridBagLayout());
 
-        mainenanceItemNameTxt.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Maintenance Item Name", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 0, 255)));
+        mainenanceItemNameTxt.setEditable(false);
+        mainenanceItemNameTxt.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Today's Maintenance Cost", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 0, 255)));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -536,6 +657,7 @@ public class SoftFlourMain extends javax.swing.JFrame {
         gridBagConstraints.insets = new java.awt.Insets(0, 10, 0, 10);
         jPanel1.add(mainenanceItemNameTxt, gridBagConstraints);
 
+        mainenanceCostTxt.setEditable(false);
         mainenanceCostTxt.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Cost", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 0, 255)));
         mainenanceCostTxt.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -552,6 +674,16 @@ public class SoftFlourMain extends javax.swing.JFrame {
         gridBagConstraints.insets = new java.awt.Insets(0, 10, 0, 10);
         jPanel1.add(mainenanceCostTxt, gridBagConstraints);
 
+        searchUserBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                searchUserBtnActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        jPanel1.add(searchUserBtn, gridBagConstraints);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 4;
@@ -567,8 +699,10 @@ public class SoftFlourMain extends javax.swing.JFrame {
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        getContentPane().add(electricityUsedPanel, gridBagConstraints);
+        gridBagConstraints.weighty = 0.2;
+        mainPanel.add(electricityUsedPanel, gridBagConstraints);
+
+        softFlourMillersTabbedPane.addTab("Daily Entries", mainPanel);
 
         tablePanel.setLayout(new java.awt.GridBagLayout());
 
@@ -576,145 +710,170 @@ public class SoftFlourMain extends javax.swing.JFrame {
         tableValuesTbl.setForeground(new java.awt.Color(0, 0, 255));
         tableValuesTbl.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4", "Title 5", "Title 6", "Title 7"
+                "DATE", "MBB", "TCMB", "SMB", "T/S", "TS/C", "PUS", "PUE", "EPC", "MD", "MC", "P(Ksh)"
             }
-        ));
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
         tableValuesTbl.setToolTipText("Right Click on the Table for Several Other Options.");
         tableValuesTbl.getTableHeader().setReorderingAllowed(false);
         tableValuesScrollPane.setViewportView(tableValuesTbl);
+        if (tableValuesTbl.getColumnModel().getColumnCount() > 0) {
+            tableValuesTbl.getColumnModel().getColumn(0).setMinWidth(120);
+            tableValuesTbl.getColumnModel().getColumn(0).setPreferredWidth(120);
+            tableValuesTbl.getColumnModel().getColumn(0).setMaxWidth(120);
+        }
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 10;
+        gridBagConstraints.gridwidth = 12;
         gridBagConstraints.gridheight = 5;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 10.0;
-        gridBagConstraints.weighty = 20.0;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 5.0;
         tablePanel.add(tableValuesScrollPane, gridBagConstraints);
 
+        codeMainingPanel.setLayout(new java.awt.GridBagLayout());
+
+        codeMeaningTextArea.setEditable(false);
+        codeMeaningTextArea.setColumns(20);
+        codeMeaningTextArea.setLineWrap(true);
+        codeMeaningTextArea.setRows(5);
+        codeMeaningTextArea.setWrapStyleWord(true);
+        codeMeaningTextArea.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Table Code Meanings", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(0, 51, 255)));
+        codeMeaningScrollPane.setViewportView(codeMeaningTextArea);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
+        codeMainingPanel.add(codeMeaningScrollPane, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 12;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
+        tablePanel.add(codeMainingPanel, gridBagConstraints);
+
+        btnNavigationPanel.setBackground(new java.awt.Color(223, 220, 217));
+        btnNavigationPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
+        btnNavigationPanel.setLayout(new java.awt.GridBagLayout());
+
+        naviEditBtn.setText("   Edit Entries   ");
+        naviEditBtn.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        naviEditBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                naviEditBtnActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
+        btnNavigationPanel.add(naviEditBtn, gridBagConstraints);
+
+        navRestBtn.setText("Reset Table");
+        navRestBtn.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        navRestBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                navRestBtnActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.weightx = 1.0;
+        btnNavigationPanel.add(navRestBtn, gridBagConstraints);
+
+        previousBtn.setBackground(new java.awt.Color(204, 204, 204));
+        previousBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/PREV1.GIF"))); // NOI18N
+        previousBtn.setEnabled(false);
+        previousBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                previousBtnActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridheight = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 2.0;
-        getContentPane().add(tablePanel, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 3, 0);
+        btnNavigationPanel.add(previousBtn, gridBagConstraints);
 
-        inforLbl.setForeground(new java.awt.Color(0, 51, 255));
-        inforLbl.setText("                                                            Smooth Floor Millers was Developed and Tested by Amimo Benja. You can contact him using the Email Address:- amimobenja08@gmail.com");
+        nextBtn.setBackground(new java.awt.Color(204, 204, 204));
+        nextBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/NEXT1.GIF"))); // NOI18N
+        nextBtn.setEnabled(false);
+        nextBtn.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        nextBtn.setPreferredSize(new java.awt.Dimension(95, 25));
+        nextBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                nextBtnActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 3, 0);
+        btnNavigationPanel.add(nextBtn, gridBagConstraints);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.ipadx = 15;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridwidth = 12;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 0.2;
+        tablePanel.add(btnNavigationPanel, gridBagConstraints);
+
+        softFlourMillersTabbedPane.addTab("Record Table", tablePanel);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.weighty = 1.0;
-        getContentPane().add(inforLbl, gridBagConstraints);
+        getContentPane().add(softFlourMillersTabbedPane, gridBagConstraints);
 
         setUpMnu.setText("Set Up");
 
@@ -784,6 +943,30 @@ public class SoftFlourMain extends javax.swing.JFrame {
 
         softflourMainBar.add(setUpMnu);
 
+        editMnu.setText("Edit");
+
+        removeMnuItm.setText("Maize Bags Details");
+        removeMnuItm.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeMnuItmActionPerformed(evt);
+            }
+        });
+        editMnu.add(removeMnuItm);
+
+        softflourMainBar.add(editMnu);
+
+        reportsMnu.setText("Reports");
+
+        periodicMnuItm.setText("General Periodic Reports");
+        periodicMnuItm.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                periodicMnuItmActionPerformed(evt);
+            }
+        });
+        reportsMnu.add(periodicMnuItm);
+
+        softflourMainBar.add(reportsMnu);
+
         setJMenuBar(softflourMainBar);
 
         pack();
@@ -814,7 +997,7 @@ public class SoftFlourMain extends javax.swing.JFrame {
     private void poshMillUnitTxtKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_poshMillUnitTxtKeyReleased
         if ((!tinsSoldTxt.getText().equals("")) && tinsSoldCashRaisedTxt.getText().replaceAll(",", "").matches("^[0-9]+(\\.[0-9]{1,4})?$") && 
                 poshMillUnitTxt.getText().replaceAll(",", "").matches("^[0-9]+(\\.[0-9]{1,4})?$")) {
-            profitRaisedTxt.setText(new com.amimobenja.www.Format2Currency().Format2Currency
+            profitRaisedTxt.setText(new com.amimobenja.www.helpers.Format2Currency().Format2Currency
                     (Double.toString(Double.valueOf(tinsSoldCashRaisedTxt.getText().replaceAll(",", "")) - 
                             Double.valueOf(poshMillUnitTxt.getText().replaceAll(",", "")))));        
         } else {
@@ -852,7 +1035,7 @@ public class SoftFlourMain extends javax.swing.JFrame {
                             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     
                     System.out.println("2 -- Code executed upto Here!");
-                        pstmt.setDate(1, com.amimobenja.www.SQLDateFormat.getSQLDate(dateChooser.getDate()));
+                        pstmt.setDate(1, com.amimobenja.www.helpers.SQLDateFormat.getSQLDate(dateChooser.getDate()));
                         pstmt.setDouble(2, Double.valueOf(maizeBagsBoughtTxt.getText()));
                         pstmt.setDouble(3, Double.valueOf(maizeBagTotalCostTxt.getText().replace(",", "")));
                         pstmt.setDouble(4, Double.valueOf(maizeBagsTxt.getText()));
@@ -882,7 +1065,7 @@ public class SoftFlourMain extends javax.swing.JFrame {
                                 
                         clear();
                         
-                        tableValuesTbl.setModel(com.amimobenja.www.TableModel.createTableVectors(connectDB, 
+                        tableValuesTbl.setModel(com.amimobenja.www.helpers.TableModel.createTableVectors(connectDB, 
                             "SELECT date, maize_bag_bought, total_cost_of_maize_bags, store_maize_bags, tins_sold, tin_sld_cash, "
                                     + "posh_unit_start, posh_unit_end, ele_posh_cost, maint_item, maint_cost, profit  FROM soft_floor_main_tbl ORDER BY date"));
                                                
@@ -943,7 +1126,7 @@ public class SoftFlourMain extends javax.swing.JFrame {
     private void mainenanceCostTxtKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_mainenanceCostTxtKeyReleased
         if ((mainenanceCostTxt.getText().matches("^[0-9]+(\\.[0-9]{1,4})?$")) && (!mainenanceCostTxt.getText().equals(""))) {
             System.out.println("Match Made!!!");
-            profitRaisedTxt.setText(new com.amimobenja.www.Format2Currency().Format2Currency
+            profitRaisedTxt.setText(new com.amimobenja.www.helpers.Format2Currency().Format2Currency
                     (Double.toString(Double.valueOf(tinsSoldCashRaisedTxt.getText().replaceAll(",", "")) - 
                             Double.valueOf(poshMillUnitTxt.getText().replaceAll(",", ""))  - Double.valueOf(mainenanceCostTxt.getText()))));        
         }
@@ -969,9 +1152,88 @@ public class SoftFlourMain extends javax.swing.JFrame {
     private void exitMnuItmActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMnuItmActionPerformed
         exit();        
     }//GEN-LAST:event_exitMnuItmActionPerformed
+
+    private void periodicMnuItmActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_periodicMnuItmActionPerformed
+        com.amimobenja.www.GeneralPeriodicReport genPRpt = new com.amimobenja.www.GeneralPeriodicReport(this, true, this.generalReport, connectDB, userName);
+
+        genPRpt.setVisible(true);
+    }//GEN-LAST:event_periodicMnuItmActionPerformed
+
+    private void removeMnuItmActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeMnuItmActionPerformed
+        com.amimobenja.www.EditMaizeBagBought editMzb = new com.amimobenja.www.EditMaizeBagBought(connectDB, userName);
+        editMzb.setVisible(true);
+    }//GEN-LAST:event_removeMnuItmActionPerformed
+
+    private void naviEditBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naviEditBtnActionPerformed
+
+        offset = 0;
+        limit = 30;
+        ClearTable.clearthisTable(tableValuesTbl);
+        ShowVisibleQueryItems(offset);
+
+        nextBtn.setEnabled(true);
+    }//GEN-LAST:event_naviEditBtnActionPerformed
+
+    private void navRestBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_navRestBtnActionPerformed
+        limit = 30;
+        ClearTable.clearthisTable(tableValuesTbl);
+        ShowVisibleQueryItems(offset);
+
+        nextBtn.setEnabled(false);
+        previousBtn.setEnabled(false);
+    }//GEN-LAST:event_navRestBtnActionPerformed
+
+    private void previousBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_previousBtnActionPerformed
+        // TODO add your handling code here:
+        if(offset>0){
+            offset= offset-tableValuesTbl.getRowCount();
+
+            ClearTable.clearthisTable(tableValuesTbl);
+            ShowVisibleQueryItems(offset);}
+        else{
+
+            JOptionPane.showMessageDialog(rootPane, "The End of the File.", "End of Table List", JOptionPane.INFORMATION_MESSAGE);
+            previousBtn.setEnabled(false);
+        }
+    }//GEN-LAST:event_previousBtnActionPerformed
+
+    private void nextBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextBtnActionPerformed
+
+        offset= offset+tableValuesTbl.getRowCount();
+
+        ClearTable.clearthisTable(tableValuesTbl);
+        ShowVisibleQueryItems(offset);
+
+        previousBtn.setEnabled(true);
+    }//GEN-LAST:event_nextBtnActionPerformed
+
+    private void searchUserBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchUserBtnActionPerformed
+        com.amimobenja.www.MaintenanceItemsCost mainCost = new com.amimobenja.www.MaintenanceItemsCost(connectDB, userName);
+        mainCost.setVisible(true);
+    }//GEN-LAST:event_searchUserBtnActionPerformed
+
+    private void profitRaisedTxtMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_profitRaisedTxtMouseClicked
+        if ((mainenanceCostTxt.getText().matches("^[0-9]+(\\.[0-9]{1,4})?$")) && !(mainenanceCostTxt.getText().equals("")) 
+                && !(tinsSoldCashRaisedTxt.getText().equals(""))) {
+            System.out.println("Match Made!!!");
+            profitRaisedTxt.setText(new com.amimobenja.www.helpers.Format2Currency().Format2Currency
+                    (Double.toString(Double.valueOf(tinsSoldCashRaisedTxt.getText().replaceAll(",", "")) - 
+                            Double.valueOf(poshMillUnitTxt.getText().replaceAll(",", ""))  - Double.valueOf(mainenanceCostTxt.getText()))));        
+        } else {
+            JOptionPane.showMessageDialog(null, "Ensure that some amount has been entered for the Cash Raised by the Solded Tins.", 
+                    "Empty Values Noted!", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_profitRaisedTxtMouseClicked
     
     private void clear() {
         populateTextFields();
+        
+        offset = 0;
+        limit = 30;
+        ClearTable.clearthisTable(tableValuesTbl);
+        ShowVisibleQueryItems(offset);
+
+        nextBtn.setEnabled(true);
         tinsSoldTxt.setText("");
         tinsSoldCashRaisedTxt.setText("");
         poshMillUnitStartTxt.setText("");
@@ -1021,14 +1283,14 @@ public class SoftFlourMain extends javax.swing.JFrame {
                     connectDB.setAutoCommit(false);
 
                     java.sql.PreparedStatement pstmtOne = connectDB.prepareStatement("UPDATE maize_bags_tbl "
-                        + "SET date = '"+com.amimobenja.www.SQLDateFormat.getSQLDate(todayDate)+"', "
+                        + "SET date = '"+com.amimobenja.www.helpers.SQLDateFormat.getSQLDate(todayDate)+"', "
                         + "total_cost= '"+new_total_cost+"', est_tins= '"+new_est_tins+"', rem_bags= '"+maizeBagsTxt.getText()+"', "
                         + "user_name= '"+userName+"' "
                              + "WHERE no_mbg_bght = '"+no_mbg_bght+"' AND cost_per_bag = '"+cost_per_bag+"' AND "
                              + "total_cost = '"+total_cost+"' AND est_tins = '"+est_tins+"'");
                     
                     
-                     System.out.println("Date - "+com.amimobenja.www.SQLDateFormat.getSQLDate(todayDate));
+                     System.out.println("Date - "+com.amimobenja.www.helpers.SQLDateFormat.getSQLDate(todayDate));
 
                      pstmtOne.executeUpdate();
 
@@ -1107,11 +1369,16 @@ public class SoftFlourMain extends javax.swing.JFrame {
     
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel btnNavigationPanel;
     private javax.swing.JPanel btnPanel;
     private javax.swing.JButton clearBtn;
     private javax.swing.JButton closeBtn;
+    private javax.swing.JPanel codeMainingPanel;
+    private javax.swing.JScrollPane codeMeaningScrollPane;
+    private javax.swing.JTextArea codeMeaningTextArea;
     private com.toedter.calendar.JDateChooser dateChooser;
     private javax.swing.JLabel dateLbl;
+    private javax.swing.JMenu editMnu;
     private javax.swing.JMenuItem editUserMnuItm;
     private javax.swing.JPanel electricityUsedPanel;
     private javax.swing.JLabel endLbl;
@@ -1122,23 +1389,34 @@ public class SoftFlourMain extends javax.swing.JFrame {
     private javax.swing.JTextField houseUnitTxt;
     private javax.swing.JLabel inforLbl;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel labelPanel;
     private javax.swing.JMenuItem logOutMnuItm;
-    private javax.swing.JTextField mainenanceCostTxt;
+    private javax.swing.JPanel mainPanel;
+    public static javax.swing.JTextField mainenanceCostTxt;
     private javax.swing.JTextField mainenanceItemNameTxt;
     private javax.swing.JMenuItem maizeBagMnuItm;
     private javax.swing.JTextField maizeBagTotalCostTxt;
     private javax.swing.JTextField maizeBagsBoughtTxt;
     private javax.swing.JLabel maizeBagsLbl;
     private javax.swing.JTextField maizeBagsTxt;
+    private javax.swing.JButton navRestBtn;
+    private javax.swing.JButton naviEditBtn;
+    private javax.swing.JButton nextBtn;
+    private javax.swing.JMenuItem periodicMnuItm;
     private javax.swing.JLabel poshMillElecUsedLbl;
     private javax.swing.JTextField poshMillUnitEndTxt;
     private javax.swing.JTextField poshMillUnitStartTxt;
     private javax.swing.JTextField poshMillUnitTxt;
+    private javax.swing.JButton previousBtn;
     private javax.swing.JPanel previousMainPanel;
     private javax.swing.JTextField profitRaisedTxt;
+    private javax.swing.JMenuItem removeMnuItm;
     private javax.swing.JMenuItem removeUserMnItm;
+    private javax.swing.JMenu reportsMnu;
     private javax.swing.JButton saveBtn;
+    private javax.swing.JButton searchUserBtn;
     private javax.swing.JMenu setUpMnu;
+    private javax.swing.JTabbedPane softFlourMillersTabbedPane;
     private javax.swing.JMenuBar softflourMainBar;
     private javax.swing.JLabel startLbl;
     private javax.swing.JPanel tablePanel;

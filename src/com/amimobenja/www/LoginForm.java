@@ -18,7 +18,7 @@ import javax.swing.JOptionPane;
 public class LoginForm extends javax.swing.JFrame {
     
     java.sql.Connection connDB = null;
-    com.amimobenja.www.DBObject dbObject;
+    com.amimobenja.www.helpers.DBObject dbObject;
     
     private java.lang.String userName;
     /**
@@ -27,7 +27,7 @@ public class LoginForm extends javax.swing.JFrame {
      */
     public LoginForm(java.sql.Connection connDb) {
         connDB = connDb;
-        dbObject = new com.amimobenja.www.DBObject();
+        dbObject = new com.amimobenja.www.helpers.DBObject();
         
         initComponents();
         

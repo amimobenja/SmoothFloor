@@ -16,16 +16,18 @@ import javax.swing.JOptionPane;
 public class TinPrices extends javax.swing.JFrame {
     public static java.sql.Connection connectDB = null;
     java.lang.String userName = null;
-    com.amimobenja.www.DBObject dbObject;
+    com.amimobenja.www.helpers.DBObject dbObject;
     java.lang.String price;
 
     /**
      * Creates new form TinPrices1
+     * @param connDb
+     * @param username
      */
     public TinPrices(java.sql.Connection connDb, java.lang.String username) {
         connectDB = connDb;
         userName = username;
-        dbObject = new com.amimobenja.www.DBObject();
+        dbObject = new com.amimobenja.www.helpers.DBObject();
         
         initComponents();
         
@@ -138,7 +140,7 @@ public class TinPrices extends javax.swing.JFrame {
         gridBagConstraints.insets = new java.awt.Insets(0, 10, 0, 10);
         btnPanel.add(clearBtn, gridBagConstraints);
 
-        cancelBtn.setText("Cancel");
+        cancelBtn.setText("Exit");
         cancelBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cancelBtnActionPerformed(evt);
@@ -196,7 +198,7 @@ public class TinPrices extends javax.swing.JFrame {
                     
                     java.sql.PreparedStatement pstmt = connectDB.prepareStatement("INSERT INTO tin_prices_tbl(date, price, set_by) VALUES (?, ?, ?)");
                     
-                        pstmt.setDate(1, com.amimobenja.www.SQLDateFormat.getSQLDate(todayDate));
+                        pstmt.setDate(1, com.amimobenja.www.helpers.SQLDateFormat.getSQLDate(todayDate));
                         pstmt.setDouble(2, Double.valueOf(newPriceTxt.getText()));
                         pstmt.setString(3, userName);
                         

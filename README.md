@@ -1,4 +1,4 @@
 SmothFloor
 ==========
 
-Work Related
+An interesting project that deals with data tracking with millers.
